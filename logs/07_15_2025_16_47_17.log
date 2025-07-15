@@ -1,0 +1,4 @@
+[ 2025-07-15 16:47:22,427] 21 root - INFO - Entered in the Data Ingestion and Component
+[ 2025-07-15 16:47:22,458] 24 root - INFO - Data read Sucessfully
+[ 2025-07-15 16:47:22,476] 29 root - INFO - Train test Split Initiated
+[ 2025-07-15 16:47:22,502] 34 root - INFO - Ingestion is Completed
