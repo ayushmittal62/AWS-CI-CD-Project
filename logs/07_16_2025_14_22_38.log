@@ -1,0 +1,9 @@
+[ 2025-07-16 14:22:39,847] 23 root - INFO - Entered in the Data Ingestion and Component
+[ 2025-07-16 14:22:39,855] 26 root - INFO - Data read Sucessfully
+[ 2025-07-16 14:22:39,870] 31 root - INFO - Train test Split Initiated
+[ 2025-07-16 14:22:39,894] 36 root - INFO - Ingestion is Completed
+[ 2025-07-16 14:22:39,903] 62 root - INFO - Data read Done - Both Train and Test Data
+[ 2025-07-16 14:22:39,903] 43 root - INFO - Numerical featres standard scaling done: ['writing_score', 'reading_score']
+[ 2025-07-16 14:22:39,903] 44 root - INFO - Categorical features encoding done: ['gender', 'race_ethnicity', 'parental_level_of_education', 'lunch', 'test_preparation_course']
+[ 2025-07-16 14:22:39,903] 74 root - INFO - Applying the preprocessor data on traing and testing data
+[ 2025-07-16 14:22:39,929] 89 root - INFO - saved Preprocessing object
