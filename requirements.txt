@@ -1,4 +1,7 @@
-pandas
+catboost
+dill
+Flask
 numpy
-seaborn
-matplotlib
+pandas
+scikit_learn
+setuptools
