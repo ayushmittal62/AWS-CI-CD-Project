@@ -49,6 +49,11 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names ${{ secrets.ECR_REPOSITORY_NAME }} || \
+          aws ecr create-repository --repository-name ${{ secrets.ECR_REPOSITORY_NAME }}
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
@@ -68,6 +73,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Install AWS CLI on self-hosted runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip curl
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -75,14 +88,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
+      - name: Docker login to ECR
+        run: |
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \
+          docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_LOGIN_URI }}
 
       - name: Pull latest image from ECR
         run: |
-          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | \docker login --username AWS --password-stdin ${{ secrets.AWS_ECR_LOGIN_URI }}
-
+          docker pull ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Run Docker Image to serve users
         run: |
