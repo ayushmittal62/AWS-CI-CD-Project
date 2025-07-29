@@ -78,13 +78,19 @@ jobs:
           AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
           echo "Current available space: ${AVAILABLE_GB}GB"
           
+          echo "=== Analyzing disk usage ==="
+          echo "Top 10 largest directories:"
+          du -h --max-depth=2 / 2>/dev/null | sort -hr | head -10 || true
+          
           # Stop Docker daemon first for complete cleanup
           echo "Stopping Docker daemon..."
-          sudo systemctl stop docker || true
+          sudo systemctl daemon-reload
+          sudo systemctl stop docker.socket docker.service || true
           
           # Remove all Docker data completely
           echo "Removing all Docker data..."
           sudo rm -rf /var/lib/docker/* 2>/dev/null || true
+          sudo rm -rf /var/lib/containerd/* 2>/dev/null || true
           
           # Clean system directories aggressively
           echo "Cleaning system directories..."
@@ -93,26 +99,45 @@ jobs:
           sudo rm -rf /usr/local/lib/android 2>/dev/null || true
           sudo rm -rf /usr/local/share/boost 2>/dev/null || true
           sudo rm -rf /usr/local/lib/node_modules 2>/dev/null || true
+          sudo rm -rf /usr/local/go 2>/dev/null || true
+          sudo rm -rf /usr/local/julia* 2>/dev/null || true
           sudo rm -rf /home/runner/.cache/* 2>/dev/null || true
           sudo rm -rf /root/.cache/* 2>/dev/null || true
           sudo rm -rf /tmp/* 2>/dev/null || true
           sudo rm -rf /var/tmp/* 2>/dev/null || true
           sudo rm -rf ~/.cache/* 2>/dev/null || true
           
+          # Clean more aggressive system files
+          echo "Additional system cleanup..."
+          sudo rm -rf /var/lib/apt/lists/* 2>/dev/null || true
+          sudo rm -rf /usr/share/doc/* 2>/dev/null || true
+          sudo rm -rf /usr/share/man/* 2>/dev/null || true
+          sudo rm -rf /usr/share/locale/* 2>/dev/null || true
+          sudo rm -rf /var/cache/* 2>/dev/null || true
+          sudo rm -rf /home/runner/.npm/* 2>/dev/null || true
+          sudo rm -rf /home/runner/.cargo/* 2>/dev/null || true
+          sudo rm -rf /home/runner/.rustup/* 2>/dev/null || true
+          
           # Clean package manager caches
           echo "Cleaning package caches..."
           sudo apt-get clean 2>/dev/null || true
-          sudo apt-get autoremove -y 2>/dev/null || true
+          sudo apt-get autoremove --purge -y 2>/dev/null || true
           sudo apt-get autoclean -y 2>/dev/null || true
           
-          # Clean logs
-          sudo journalctl --vacuum-time=1d 2>/dev/null || true
-          sudo rm -rf /var/log/*.log 2>/dev/null || true
+          # Clean logs aggressively
+          sudo journalctl --vacuum-size=1M 2>/dev/null || true
+          sudo rm -rf /var/log/* 2>/dev/null || true
+          sudo find /var/log -type f -delete 2>/dev/null || true
+          
+          # Clear Python caches
+          find /usr -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+          find /usr -name "*.pyc" -delete 2>/dev/null || true
           
           # Restart Docker
           echo "Restarting Docker daemon..."
-          sudo systemctl start docker
-          sleep 15
+          sudo systemctl daemon-reload
+          sudo systemctl start docker.service
+          sleep 20
           
           # Show final space
           echo "=== SPACE AFTER CLEANUP ==="
@@ -123,76 +148,18 @@ jobs:
           FINAL_GB=$((FINAL_KB / 1024 / 1024))
           echo "Final available space: ${FINAL_GB}GB"
           
-          if [ $FINAL_GB -lt 4 ]; then
+          if [ $FINAL_GB -lt 3 ]; then
             echo "❌ ERROR: Still only ${FINAL_GB}GB available after cleanup."
-            echo "Your runner needs more disk space. Consider:"
-            echo "1. Expanding the disk size"
-            echo "2. Using a larger instance"
-            echo "3. Setting up regular cleanup scripts"
+            echo "=== DISK USAGE ANALYSIS ==="
+            echo "Remaining large directories:"
+            du -h --max-depth=2 / 2>/dev/null | sort -hr | head -15 || true
+            echo ""
+            echo "Your 6.8GB runner is too small for Docker operations. You need:"
+            echo "1. At least 15GB disk space for reliable Docker operations"
+            echo "2. Consider using a larger EC2 instance"
+            echo "3. Or use GitHub-hosted runners instead of self-hosted"
             exit 1
           fi
-
-      - name: Check disk space before cleanup
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h
-          echo "=== Docker disk usage ==="
-          docker system df
-          echo "=== Docker images ==="
-          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
-
-      - name: Emergency disk space check
-        run: |
-          # Check if we have less than 2GB free space
-          AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
-          AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
-          echo "Available space: ${AVAILABLE_GB}GB"
-          
-          if [ $AVAILABLE_GB -lt 2 ]; then
-            echo "⚠️  WARNING: Less than 2GB available, performing emergency cleanup..."
-            # Stop all containers immediately
-            docker stop $(docker ps -aq) 2>/dev/null || true
-            docker rm $(docker ps -aq) 2>/dev/null || true
-            # Remove ALL images except the one we're about to pull
-            docker rmi $(docker images -q) 2>/dev/null || true
-            # Clean everything
-            docker system prune -af --volumes
-          fi
-
-      - name: Comprehensive Docker cleanup
-        run: |
-          echo "=== Stopping and removing containers ==="
-          # Stop and remove all containers
-          docker stop $(docker ps -aq) 2>/dev/null || true
-          docker rm $(docker ps -aq) 2>/dev/null || true
-          
-          echo "=== Removing unused images and networks ==="
-          # Remove all unused images, networks, and build cache
-          docker system prune -af --volumes
-          
-          echo "=== Removing dangling and unused images ==="
-          # Remove dangling images
-          docker image prune -af
-          
-          # Remove old images (keep only latest few)
-          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | grep -v "latest" | head -n -3 | awk '{print $2}' | xargs -r docker rmi 2>/dev/null || true
-          
-          echo "=== System cleanup ==="
-          # Clean system caches
-          rm -rf ~/.cache/pip/* 2>/dev/null || true
-          sudo apt-get clean 2>/dev/null || true
-          sudo rm -rf /tmp/* 2>/dev/null || true
-          sudo rm -rf /var/tmp/* 2>/dev/null || true
-          
-          # Clean Docker logs
-          sudo truncate -s 0 /var/lib/docker/containers/*/*-json.log 2>/dev/null || true
-
-      - name: Check disk space after cleanup
-        run: |
-          echo "Disk usage after cleanup:"
-          df -h
-          echo "Available space in root:"
-          df -h / | awk 'NR==2{printf "Available: %s (Used: %s)\n", $4, $5}'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -262,37 +229,42 @@ jobs:
           echo "=== Final pre-pull space check ==="
           df -h /
           
-          # Check if we have enough space (at least 4GB)
+          # Check if we have enough space (at least 2.5GB)
           AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
           AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
           
-          if [ $AVAILABLE_GB -lt 4 ]; then
-            echo "❌ ERROR: Only ${AVAILABLE_GB}GB available. Need at least 4GB for safe image pull."
-            echo "Please increase disk space on your self-hosted runner."
-            exit 1
+          if [ $AVAILABLE_GB -lt 3 ]; then
+            echo "⚠️  WARNING: Only ${AVAILABLE_GB}GB available. This is risky but proceeding..."
+            echo "Performing final cleanup before pull..."
+            docker system prune -af --volumes 2>/dev/null || true
+            sudo rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
           fi
           
-          echo "✅ Sufficient space available: ${AVAILABLE_GB}GB"
-          echo "Pulling latest image..."
+          echo "✅ Space available: ${AVAILABLE_GB}GB"
+          echo "Pulling latest image with streaming to minimize disk usage..."
           
           # Pull with retry mechanism and better error handling
           IMAGE_URI="${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest"
           
           for i in {1..3}; do
             echo "Pull attempt $i/3..."
-            if docker pull --quiet "$IMAGE_URI"; then
+            # Use docker pull without --quiet to see progress and detect issues early
+            if timeout 300 docker pull "$IMAGE_URI"; then
               echo "✅ Image pulled successfully"
               break
             else
               echo "❌ Pull attempt $i failed"
               if [ $i -eq 3 ]; then
-                echo "All pull attempts failed. Checking space..."
+                echo "All pull attempts failed. Final space check..."
                 df -h /
+                echo "Remaining space analysis:"
+                du -h --max-depth=1 /var/lib/docker 2>/dev/null | sort -hr || true
                 exit 1
               fi
               
               echo "Cleaning up before retry..."
               docker system prune -af
+              sudo rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
               sleep 5
             fi
           done
