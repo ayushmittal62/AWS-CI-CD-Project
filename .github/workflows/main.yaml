@@ -70,36 +70,106 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Free up disk space immediately
+        run: |
+          echo "=== EMERGENCY DISK CLEANUP ==="
+          # Check current space
+          AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
+          AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
+          echo "Current available space: ${AVAILABLE_GB}GB"
+          
+          # Stop all Docker containers first
+          echo "Stopping all containers..."
+          docker ps -q | xargs -r docker stop
+          
+          # Remove all containers
+          echo "Removing all containers..."
+          docker ps -aq | xargs -r docker rm -f
+          
+          # Remove ALL Docker images (we'll pull fresh)
+          echo "Removing all Docker images..."
+          docker images -q | xargs -r docker rmi -f 2>/dev/null || true
+          
+          # Comprehensive Docker cleanup
+          echo "Docker system cleanup..."
+          docker system prune -af --volumes
+          
+          # Clear Docker build cache
+          echo "Clearing Docker build cache..."
+          docker builder prune -af
+          
+          # Remove Docker logs
+          echo "Clearing Docker logs..."
+          sudo truncate -s 0 /var/lib/docker/containers/*/*-json.log 2>/dev/null || true
+          
+          # System cleanup
+          echo "System cleanup..."
+          sudo apt-get clean 2>/dev/null || true
+          sudo rm -rf /tmp/* 2>/dev/null || true
+          sudo rm -rf /var/tmp/* 2>/dev/null || true
+          sudo rm -rf ~/.cache/* 2>/dev/null || true
+          
+          # GitHub Actions cleanup
+          sudo rm -rf /opt/hostedtoolcache/* 2>/dev/null || true
+          
+          # Show final space
+          echo "=== SPACE AFTER CLEANUP ==="
+          df -h /
+
       - name: Check disk space before cleanup
         run: |
-          echo "Disk usage before cleanup:"
+          echo "=== Disk usage before cleanup ==="
           df -h
-          echo "Docker disk usage:"
+          echo "=== Docker disk usage ==="
           docker system df
+          echo "=== Docker images ==="
+          docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}"
 
-      - name: Aggressive Docker cleanup
+      - name: Emergency disk space check
         run: |
-          echo "Stopping and removing all containers..."
+          # Check if we have less than 2GB free space
+          AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
+          AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
+          echo "Available space: ${AVAILABLE_GB}GB"
+          
+          if [ $AVAILABLE_GB -lt 2 ]; then
+            echo "⚠️  WARNING: Less than 2GB available, performing emergency cleanup..."
+            # Stop all containers immediately
+            docker stop $(docker ps -aq) 2>/dev/null || true
+            docker rm $(docker ps -aq) 2>/dev/null || true
+            # Remove ALL images except the one we're about to pull
+            docker rmi $(docker images -q) 2>/dev/null || true
+            # Clean everything
+            docker system prune -af --volumes
+          fi
+
+      - name: Comprehensive Docker cleanup
+        run: |
+          echo "=== Stopping and removing containers ==="
+          # Stop and remove all containers
           docker stop $(docker ps -aq) 2>/dev/null || true
           docker rm $(docker ps -aq) 2>/dev/null || true
           
-          echo "Removing all unused images, networks, and build cache..."
+          echo "=== Removing unused images and networks ==="
+          # Remove all unused images, networks, and build cache
           docker system prune -af --volumes
           
-          echo "Removing all images (keeping only running containers)..."
+          echo "=== Removing dangling and unused images ==="
+          # Remove dangling images
           docker image prune -af
           
-          echo "Additional cleanup of dangling images..."
-          docker rmi $(docker images -f "dangling=true" -q) 2>/dev/null || true
+          # Remove old images (keep only latest few)
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | grep -v "latest" | head -n -3 | awk '{print $2}' | xargs -r docker rmi 2>/dev/null || true
           
-          echo "Clean pip cache..."
+          echo "=== System cleanup ==="
+          # Clean system caches
           rm -rf ~/.cache/pip/* 2>/dev/null || true
-          
-          echo "Clean apt cache..."
           sudo apt-get clean 2>/dev/null || true
-          
-          echo "Clean temp files..."
           sudo rm -rf /tmp/* 2>/dev/null || true
+          sudo rm -rf /var/tmp/* 2>/dev/null || true
+          
+          # Clean Docker logs
+          sudo truncate -s 0 /var/lib/docker/containers/*/*-json.log 2>/dev/null || true
 
       - name: Check disk space after cleanup
         run: |
@@ -129,10 +199,41 @@ jobs:
             echo "No existing mltest container found"
           fi
       
-      - name: Pull latest images
+      - name: Pre-pull disk space check
         run: |
-          echo "Pulling latest image..."
-          docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          echo "=== Checking available space before pulling image ==="
+          AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
+          AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
+          echo "Available space: ${AVAILABLE_GB}GB"
+          
+          if [ $AVAILABLE_GB -lt 3 ]; then
+            echo "⚠️  WARNING: Less than 3GB available for image pull!"
+            echo "Performing additional cleanup..."
+            docker system prune -af --volumes
+            # Remove GitHub Actions cache
+            sudo rm -rf /opt/hostedtoolcache/* 2>/dev/null || true
+            sudo rm -rf /usr/share/dotnet 2>/dev/null || true
+            sudo rm -rf /usr/local/lib/android 2>/dev/null || true
+          fi
+      
+      - name: Pull latest images with space monitoring
+        run: |
+          echo "=== Pre-pull space check ==="
+          df -h /
+          
+          echo "Pulling latest image with progress monitoring..."
+          # Use --quiet to reduce log output
+          docker pull --quiet ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          
+          echo "=== Post-pull space check ==="
+          df -h /
+         
+      - name: Clean up old images after pull
+        run: |
+          echo "Removing old versions of the same image..."
+          # Keep only the latest tag and remove other versions
+          IMAGE_REPO="${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}"
+          docker images --format "{{.Repository}}:{{.Tag}} {{.ID}}" | grep "$IMAGE_REPO" | grep -v ":latest" | awk '{print $2}' | xargs -r docker rmi 2>/dev/null || true
          
       - name: Run Docker Image to serve users
         run: |
@@ -152,4 +253,3 @@ jobs:
         run: |
           echo "Final cleanup of unused images and containers..."
           docker system prune -f
-          
