@@ -38,8 +38,6 @@ jobs:
           echo "=== Initial disk usage ==="
           df -h
           echo "=== Freeing up space on GitHub runner ==="
-          
-          # Remove unnecessary software to free up space
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
           sudo rm -rf /opt/ghc
@@ -48,15 +46,10 @@ jobs:
           sudo rm -rf /usr/local/graalvm/
           sudo rm -rf /usr/local/share/chromium
           sudo rm -rf /usr/local/lib/node_modules
-          
-          # Clean package caches
           sudo apt-get clean
           sudo apt-get autoremove -y
-          
-          # Clear tmp directories  
           sudo rm -rf /tmp/*
           sudo rm -rf /var/tmp/*
-          
           echo "=== Disk usage after cleanup ==="
           df -h
 
@@ -64,6 +57,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq unzip
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -81,31 +75,21 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
-          # Disable pip caching to save space
           PIP_NO_CACHE_DIR: 1
         run: |
           echo "=== Pre-build disk space check ==="
           df -h
-          
-          # Build a docker container with space-efficient options
           echo "Building Docker image..."
           docker build --no-cache --compress -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          
           echo "=== Post-build disk space check ==="
           df -h
-          
-          # Clean up build cache before push
           docker builder prune -f
-          
-          # Push to ECR
           echo "Pushing to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-          
           echo "=== Final disk space check ==="
           df -h
-          
-          
+
   Continuous-Deployment:
     needs: build-and-push-ecr-image
     runs-on: self-hosted
@@ -113,39 +97,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Free up disk space immediately
+      - name: Free up disk space before pulling image
         run: |
-          echo "=== EMERGENCY DISK CLEANUP ==="
-          # Check current space
+          echo "=== PRE-PULL DISK CLEANUP ==="
           AVAILABLE_KB=$(df / | awk 'NR==2 {print $4}')
           AVAILABLE_GB=$((AVAILABLE_KB / 1024 / 1024))
           echo "Current available space: ${AVAILABLE_GB}GB"
-          
-          # Stop Docker daemon first for complete cleanup
-          echo "Stopping Docker daemon..."
           sudo systemctl stop docker || true
-          
-          # Remove all Docker data completely
-          echo "Removing all Docker data..."
           sudo rm -rf /var/lib/docker/* 2>/dev/null || true
-          
-          # Clean system directories aggressively
-          echo "Cleaning system directories..."
-          sudo rm -rf /tmp/* 2>/dev/null || true
-          sudo rm -rf /var/tmp/* 2>/dev/null || true
-          sudo rm -rf ~/.cache/* 2>/dev/null || true
-          
-          # Clean package manager caches
-          echo "Cleaning package caches..."
+          sudo rm -rf /tmp/* /var/tmp/* ~/.cache/* 2>/dev/null || true
           sudo apt-get clean 2>/dev/null || true
           sudo apt-get autoremove -y 2>/dev/null || true
-          
-          # Restart Docker
-          echo "Restarting Docker daemon..."
+          sudo rm -rf /opt/hostedtoolcache/*
           sudo systemctl start docker
           sleep 10
-          
-          # Show final space
           echo "=== SPACE AFTER CLEANUP ==="
           df -h /
 
@@ -159,7 +124,7 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-      
+
       - name: Stop and remove existing container
         run: |
           if docker ps -q --filter "name=mltest" | grep -q .; then
@@ -169,33 +134,26 @@ jobs:
           else
             echo "No existing mltest container found"
           fi
-      
-      - name: Pull latest images
+
+      - name: Pull latest image
         run: |
           echo "=== Pre-pull space check ==="
           df -h /
           echo "Pulling latest image..."
-          docker pull ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker pull --disable-content-trust ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
           echo "=== Post-pull space check ==="
           df -h /
-         
-      # - name: Stop and remove  container if running
-      #   run: |
-      #    docker ps -q --filter "name=mltest" | grep -q . && docker stop mltest && docker rm -fv mltest
-       
+
       - name: Run Docker Image to serve users
         run: |
           echo "Starting new mltest container..."
           docker run -d -p 8080:8080 --ipc="host" --name=mltest \
-            -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' \
-            -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
-            -e 'AWS_REGION=${{ secrets.AWS_REGION }}' \
-            ${{secrets.AWS_ECR_LOGIN_URI}}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+            -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+            -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} \
+            -e AWS_REGION=${{ secrets.AWS_REGION }} \
+            ${{ secrets.AWS_ECR_LOGIN_URI }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Clean previous images and containers
+      - name: Final Docker Cleanup
         run: |
-          echo "Final cleanup of unused images and containers..."
+          echo "Cleaning up unused Docker resources..."
           docker system prune -f
-
-          
-          

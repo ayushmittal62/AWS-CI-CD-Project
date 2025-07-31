@@ -1,0 +1,202 @@
+[ 2025-07-31 17:42:40,044] 97 werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.8.18:8080
+[ 2025-07-31 17:42:40,045] 97 werkzeug - INFO - [33mPress CTRL+C to quit[0m
+[ 2025-07-31 17:43:00,104] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:43:00] "GET / HTTP/1.1" 200 -
+[ 2025-07-31 17:43:01,068] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:43:01] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+[ 2025-07-31 17:43:04,312] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:43:04] "GET /predictdata HTTP/1.1" 200 -
+[ 2025-07-31 17:43:21,361] 838 app - ERROR - Exception on /predictdata [POST]
+Traceback (most recent call last):
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 17, in predict
+    data_scaled = preprocessor.transform(features)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 1076, in transform
+    Xs = self._call_func_on_transformers(
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 885, in _call_func_on_transformers
+    return Parallel(n_jobs=self.n_jobs)(jobs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 74, in __call__
+    return super().__call__(iterable_with_config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1918, in __call__
+    return output if self.return_generator else list(output)
+                                                ^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1847, in _get_sequential_output
+    res = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 136, in __call__
+    return self.function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 1290, in _transform_one
+    res = transformer.transform(X, **params.transform)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 903, in transform
+    Xt = transform.transform(Xt, **routed_params[name].transform)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 1024, in transform
+    X_int, X_mask = self._transform(
+                    ^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 214, in _transform
+    raise ValueError(msg)
+ValueError: Found unknown categories [None] in column 1 during transform
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\app.py", line 34, in predict_datapoint
+    results=predict_pipeline.predict(pred_df)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 21, in predict
+    raise CustomException(e, sys)
+src.exception.CustomException: Error occurred in script [C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py] at line [17]: Found unknown categories [None] in column 1 during transform
+[ 2025-07-31 17:43:21,469] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:43:21] "[35m[1mPOST /predictdata HTTP/1.1[0m" 500 -
+[ 2025-07-31 17:44:46,149] 838 app - ERROR - Exception on /predictdata [POST]
+Traceback (most recent call last):
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 17, in predict
+    data_scaled = preprocessor.transform(features)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 1076, in transform
+    Xs = self._call_func_on_transformers(
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 885, in _call_func_on_transformers
+    return Parallel(n_jobs=self.n_jobs)(jobs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 74, in __call__
+    return super().__call__(iterable_with_config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1918, in __call__
+    return output if self.return_generator else list(output)
+                                                ^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1847, in _get_sequential_output
+    res = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 136, in __call__
+    return self.function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 1290, in _transform_one
+    res = transformer.transform(X, **params.transform)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 903, in transform
+    Xt = transform.transform(Xt, **routed_params[name].transform)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 1024, in transform
+    X_int, X_mask = self._transform(
+                    ^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 214, in _transform
+    raise ValueError(msg)
+ValueError: Found unknown categories [None] in column 1 during transform
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\app.py", line 34, in predict_datapoint
+    results=predict_pipeline.predict(pred_df)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 21, in predict
+    raise CustomException(e, sys)
+src.exception.CustomException: Error occurred in script [C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py] at line [17]: Found unknown categories [None] in column 1 during transform
+[ 2025-07-31 17:44:46,156] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:44:46] "[35m[1mPOST /predictdata HTTP/1.1[0m" 500 -
+[ 2025-07-31 17:45:55,697] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:45:55] "GET / HTTP/1.1" 200 -
+[ 2025-07-31 17:45:58,658] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:45:58] "GET /predictdata HTTP/1.1" 200 -
+[ 2025-07-31 17:46:12,665] 838 app - ERROR - Exception on /predictdata [POST]
+Traceback (most recent call last):
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 17, in predict
+    data_scaled = preprocessor.transform(features)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 1076, in transform
+    Xs = self._call_func_on_transformers(
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\compose\_column_transformer.py", line 885, in _call_func_on_transformers
+    return Parallel(n_jobs=self.n_jobs)(jobs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 74, in __call__
+    return super().__call__(iterable_with_config)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1918, in __call__
+    return output if self.return_generator else list(output)
+                                                ^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\joblib\parallel.py", line 1847, in _get_sequential_output
+    res = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\parallel.py", line 136, in __call__
+    return self.function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 1290, in _transform_one
+    res = transformer.transform(X, **params.transform)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\pipeline.py", line 903, in transform
+    Xt = transform.transform(Xt, **routed_params[name].transform)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\utils\_set_output.py", line 316, in wrapped
+    data_to_wrap = f(self, X, *args, **kwargs)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 1024, in transform
+    X_int, X_mask = self._transform(
+                    ^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\sklearn\preprocessing\_encoders.py", line 214, in _transform
+    raise ValueError(msg)
+ValueError: Found unknown categories [None] in column 1 during transform
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\AppData\Local\Programs\Python\Python312\Lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\app.py", line 34, in predict_datapoint
+    predict_pipeline=PredictPipeline()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py", line 21, in predict
+    raise CustomException(e, sys)
+src.exception.CustomException: Error occurred in script [C:\Users\ayush\Downloads\AWS-CI-CD-Project\src\pipeline\predict_pipeline.py] at line [17]: Found unknown categories [None] in column 1 during transform
+[ 2025-07-31 17:46:12,674] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:46:12] "[35m[1mPOST /predictdata HTTP/1.1[0m" 500 -
