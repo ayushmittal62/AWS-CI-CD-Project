@@ -5,3 +5,4 @@
 [ 2025-07-31 17:49:00,902] 97 werkzeug - INFO - [33mPress CTRL+C to quit[0m
 [ 2025-07-31 17:49:28,480] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:49:28] "GET /predictdata HTTP/1.1" 200 -
 [ 2025-07-31 17:49:43,075] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:49:43] "POST /predictdata HTTP/1.1" 200 -
+[ 2025-07-31 17:53:31,079] 97 werkzeug - INFO - 127.0.0.1 - - [31/Jul/2025 17:53:31] "POST /predictdata HTTP/1.1" 200 -
